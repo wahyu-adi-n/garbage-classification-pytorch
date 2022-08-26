@@ -2,7 +2,14 @@ import io
 from PIL import Image
 import streamlit as st
 import torch
-from torchvision import transforms
+from torchvision import transforms, models
+
+model = models.alexnet(pretrained=True)
+
+for param in model.parameters():
+    param.required_grad = False
+
+num_features = model.classifier[6].in_features
 
 MODEL_PATH = 'model.pt'
 LABELS_PATH = 'labels.txt'
@@ -19,7 +26,9 @@ def load_image():
 
 
 def load_model(model_path):
-    model = torch.load(model_path, map_location='cpu')
+    model.classifier[6] = torch.nn.Linear(num_features, 12)
+    model.load_state_dict(torch.load(
+        model_path, map_location=torch.device('cpu')))
     model.eval()
     return model
 
@@ -51,8 +60,10 @@ def predict(model, categories, image):
         st.write(categories[all_catid[i]], all_prob[i].item())
 
 
-def main():
-    st.title('Custom model demo')
+if __name__ == '__main__':
+    st.write("""
+    # Custom model demo
+    """)
     model = load_model(MODEL_PATH)
     categories = load_labels(LABELS_PATH)
     image = load_image()
@@ -60,7 +71,3 @@ def main():
     if result:
         st.write('Calculating results...')
         predict(model, categories, image)
-
-
-if __name__ == '__main__':
-    main()
