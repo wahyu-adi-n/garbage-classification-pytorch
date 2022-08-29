@@ -10,4 +10,4 @@ COPY . /app
 
 EXPOSE 9000
 
-CMD ["streamlit", "run","app.py"]
+CMD ["streamlit", "run","app-pretrained-alexnet.py"]

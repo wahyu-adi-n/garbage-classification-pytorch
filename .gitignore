@@ -1,2 +1,6 @@
 /env
+/pretrained
+/labels6.txt
 model.pt
+model-resnet50.pt
+model_scripted.pt
