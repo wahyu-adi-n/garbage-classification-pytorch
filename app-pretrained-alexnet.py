@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
-from torchvision import transforms, models
+from torchvision import transforms
 import streamlit as st
 from PIL import Image
 import io
-import os
 
 
 class GarbageClassifier():
@@ -19,12 +18,12 @@ class GarbageClassifier():
         self.num_classes = num_classes
 
     def loadImage(self):
-        upload = st.sidebar.file_uploader(
-            label='Pick Your Image as an Input', type=['jpg', 'png', 'png'])
-        if upload is not None:
-            img = upload.getvalue()
-            st.image(img)
-            return Image.open(io.BytesIO(img))
+        image = st.sidebar.file_uploader(
+            label='Pick Your Image as an Input',
+            type=['jpg', 'png', 'png'])
+        if image is not None:
+            img = image.getvalue()
+            return img
         return None
 
     def loadModel(self):
@@ -37,7 +36,7 @@ class GarbageClassifier():
             categories = [s.strip() for s in f.readlines()]
             return categories
 
-    def predict(self, model, categories, image):
+    def predict(self, model, categories, image, num_result):
         image_transforms = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -54,8 +53,11 @@ class GarbageClassifier():
         probabilities = nn.functional.softmax(output[0], dim=0)
 
         proba, category_id = torch.topk(probabilities, len(categories))
-        for i in range(proba.size(0)):
-            st.write(categories[category_id[i]], proba[i].item())
+        for i in range(num_result):
+            st.write("""
+                #### Class: {} 
+                #### Confidence: {:.2f} %
+            """.format(categories[category_id[i]], proba[i].item()*100))
 
 
 if __name__ == '__main__':
@@ -63,15 +65,22 @@ if __name__ == '__main__':
         # Web Apps - Garbage Classification
     """)
     st.sidebar.header('Image Input')
+    picture = st.sidebar.camera_input("Take a Picture")
     garbage = GarbageClassifier()
-    image = garbage.loadImage()
+    image = garbage.loadImage() if picture is None else picture.getvalue()
     model = garbage.loadModel()
     categories = garbage.loadCategories()
-    result = st.button('Click This Button to Classify')
-
-    if image is not None:
-        if result:
-            st.write('Calculating results...')
-            garbage.predict(model, categories, image)
-    else:
+    if image is None:
         st.write('No image yet, please upload!')
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(image)
+            result = st.button('Click This Button to Classify')
+        with col2:
+            num_result = st.sidebar.slider(
+                'Num Clasess', 1, 12, 1)
+            if result:
+                st.write('### Result: ')
+                image = Image.open(io.BytesIO(image))
+                garbage.predict(model, categories, image, num_result)
