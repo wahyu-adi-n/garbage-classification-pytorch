@@ -4,6 +4,7 @@ from torchvision import transforms
 import streamlit as st
 from PIL import Image
 import io
+import time
 
 
 class GarbageClassifier():
@@ -36,7 +37,7 @@ class GarbageClassifier():
             categories = [s.strip() for s in f.readlines()]
             return categories
 
-    def predict(self, model, categories, image, num_result):
+    def predict(self, model, categories, image):
         image_transforms = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -46,18 +47,11 @@ class GarbageClassifier():
         ])
         input_tensor = image_transforms(image)
         input_batch = input_tensor.unsqueeze(0)
-
         with torch.no_grad():
             output = model(input_batch)
-
         probabilities = nn.functional.softmax(output[0], dim=0)
-
         proba, category_id = torch.topk(probabilities, len(categories))
-        for i in range(num_result):
-            st.write("""
-                #### Class: {} 
-                #### Confidence: {:.2f} %
-            """.format(categories[category_id[i]], proba[i].item()*100))
+        return proba, category_id
 
 
 if __name__ == '__main__':
@@ -83,4 +77,12 @@ if __name__ == '__main__':
             if result:
                 st.write('### Result: ')
                 image = Image.open(io.BytesIO(image))
-                garbage.predict(model, categories, image, num_result)
+                t = time.time()
+                proba, category_id = garbage.predict(model, categories, image)
+                time = time.time() - t
+                for i in range(num_result):
+                    st.write("""
+                        #### Class: {} 
+                        #### Confidence: {:.2f} %
+                    """.format(categories[category_id[i]], proba[i].item()*100))
+                st.write("Inference Time: {:.3f}s".format(time))
