@@ -18,5 +18,5 @@ $ docker pull wahyuadinugroho/garbage-classification:latest
 ### Run Image
 
 ```
-$ docker run -it --rm -p 9000:8501 wahyuadinugroho/garbage-classification:latest .
+$ docker run -it --rm -p 9000:8501 wahyuadinugroho/garbage-classification:latest
 ```
